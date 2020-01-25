@@ -1,3 +1,9 @@
+'''
+Created by the authors.
+@wallissoncarvalho
+@machadoyang
+'''
+
 import pandas as pd
 import numpy as np
 
