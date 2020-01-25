@@ -5,7 +5,6 @@ Created by the authors.
 import pandas as pd
 import numpy as np
 from dateutil.relativedelta import relativedelta
-from shapely.geometry import Point
 
 def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=False):
     '''
