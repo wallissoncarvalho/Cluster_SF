@@ -1,14 +1,16 @@
 '''
 Created by the authors.
 @wallissoncarvalho
+@machadoyang
 '''
+
 import pandas as pd
 import numpy as np
 from dateutil.relativedelta import relativedelta
 
 def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=False):
     '''
-    For this function, you need DataFrame flow stations on columns and the measurements at each time on the rows. 
+    For this function, you need a DataFrame structure with flow stations on columns and the measurements at each time on the rows. 
     This function selects stations with at least n_years of data between the first and the last one registered flow.
     The selected stations can be filtered by a maximum missing data percentage (from 0% to 100%) inside a period of n_years.
     Moreover, you can choose a specific starting date and/or end date to clip your data.
