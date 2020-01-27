@@ -42,7 +42,10 @@ def slope_fdc(data):
     df = pd.DataFrame(index=data.columns.values, columns=['SFDC'])
     for column in list(data.columns.values):
         serie = pd.Series(data[column], name=column).dropna()
-        sfdc = (math.log(serie.quantile(0.66))-math.log(serie.quantile(0.33)))/0.33
+        try:
+            sfdc = (math.log(serie.quantile(0.67))-math.log(serie.quantile(0.34)))/0.33
+        except:
+            sfdc=0
         df['SFDC'].loc[column] = sfdc
     return df
     

@@ -8,6 +8,7 @@ import pandas as pd
 import numpy as np
 from dateutil.relativedelta import relativedelta
 
+
 def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=False):
     '''
     For this function, you need a DataFrame structure with flow stations on columns and the measurements at each time on the rows. 
@@ -73,6 +74,8 @@ def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=
     data=data[stations]
     return data
 
+
+## Deprecated method 
 def naturalize_flow(observed_flows,natural_flows,reservoirs_discharge,affected_stations):
     to_sum = pd.DataFrame()
     for column in natural_flows.columns:
@@ -82,13 +85,6 @@ def naturalize_flow(observed_flows,natural_flows,reservoirs_discharge,affected_s
         stations = list(affected_stations[column].dropna())
         for station in stations:
             observed_flows[station] = observed_flows[station] + to_sum[column]
+###
 
 
-
-
-
-
-
-
-
-    

@@ -1,0 +1,2 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<metadata xml:lang="pt"><Esri><CreaDate>20200127</CreaDate><CreaTime>10560100</CreaTime><ArcGISFormat>1.0</ArcGISFormat><SyncOnce>TRUE</SyncOnce><DataProperties><lineage><Process ToolSource="c:\program files (x86)\arcgis\desktop10.3\ArcToolbox\Toolboxes\Arc Hydro Tools.tbx\AssignHydroID" Date="20200126" Time="050433">AssignHydroID C:\SIG_CLUSTER\layers.gdb\Layers\LongestFlowPath OVERWRITE_NO</Process></lineage></DataProperties></Esri></metadata>
