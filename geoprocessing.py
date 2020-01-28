@@ -142,5 +142,24 @@ def drainage_density(shape_watersheds_dir,shape_drainage_line_dir):
     df =pd.DataFrame({'Name':Name,'Drainage_Density':Drainage_Density})
     return df
 
-
+def shape_estacoes_area(dados,inventario_hidroweb_dir,shape_area_dir,buffer=0):
+    ''' Retorna o shapefile da estações contidas no dataframe dados e que estão presentes em uma área de interesse.            
+    '''   
+    import baixar
+    from shapely.geometry import Point
+    import geopandas as gpd
+    postos_area=baixar.postos_na_area(inventario_hidroweb_dir,shape_area_dir,buffer=0)
+    postos_dados=[] 
+    for column in dados.columns:
+        postos_dados.append(int(column))
+    postos_dados={'Codigo':postos_dados}
+    postos_dados=pd.DataFrame(data=postos_dados)
+    postos_dados=postos_area.merge(postos_dados,on=['Codigo'])
+    shape_postos_area=[Point(x) for x in zip(postos_dados['Longitude'],postos_dados['Latitude'])]
+    crs={'proj':'latlong','ellps':'WGS84','datum':'WGS84','no_def':True} #SC WGS 8
+    shape_postos_area=gpd.GeoDataFrame(crs=crs,geometry=shape_postos_area)
+    shape_postos_area['Codigo']=postos_dados['Codigo']
+    shape_postos_area['Latitude']=postos_dados['Latitude']
+    shape_postos_area['Longitude']=postos_dados['Longitude']
+    return shape_postos_area
 
