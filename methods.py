@@ -35,7 +35,7 @@ def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=
                 stations.append(column)
     data=data[stations]
     
-    #FILTRO 2: Verifica se há pelo menos uma janela com 10 anos de registro com até no máximo missing_percent.
+    #FILTRO 2: Checks if there is at least one period with 10 years of registered records and max missing_percent.
     stations=[]
     state = 0
     for column in data.columns:

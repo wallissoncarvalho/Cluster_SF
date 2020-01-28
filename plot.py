@@ -47,3 +47,19 @@ def gantt(dados,nome_grafico,mensal=True):
     fig = ff.create_gantt(periodos, colors=colors, index_col='Resource', show_colorbar=True,showgrid_x=True, showgrid_y=True, height=(200+len(postos_com_dados)*30),width=1800, group_tasks=True)
     plot(fig,filename=nome_grafico +'.html')
     return
+
+def plot_correlation_matrix(data):
+    import seaborn as sns
+    corr = data.corr(method='spearman')
+    ax = sns.heatmap(
+        corr,
+        vmin=-1, vmax=1, center=0,
+        cmap=sns.diverging_palette(20, 220, n=200),
+        square=True
+    )
+    ax.set_xticklabels(
+        ax.get_xticklabels(),
+        rotation=45,
+        horizontalalignment='right'
+    )
+    return
