@@ -6,56 +6,64 @@ Created by the authors.
 
 import pandas as pd
 import numpy as np
+import math
 
 def quantiles(data):
-    df = pd.DataFrame(index=data.columns.values, columns=['q90','Mean','q10'])
-    for column in list(data.columns.values):
-        serie = pd.Series(data[column], name=column)
-        q90=serie.quantile(0.1)
-        q10=serie.quantile(0.9)
-        mean=serie.mean()
-        df['q90'].loc[column] = q90
-        df['q10'].loc[column] = q10
-        df['Mean'].loc[column] = mean
-    return df
+    return pd.DataFrame({'Q90':data.quantile(.1),'Qmean':data.mean(),'Q10':data.quantile(.9)})
 
 def coefficient_variation(data):
-    CV = data.std()/data.mean()
-    return pd.Series(CV.values, index=CV.index, name='CV')
+    return pd.DataFrame({'CV':(data.std()/data.mean())})
 
 def rbf(data):
-    df = pd.DataFrame(index=data.columns.values, columns=['RBF'])
-    denominator = 0
-    for column in list(data.columns.values):
-        numerator=0
-        serie = pd.Series(data[column], name=column).dropna()
-        for i in range(len(serie)-1):
-            if serie.iloc[i+1] != np.nan:
-                numerator += abs(serie.iloc[i+1]-serie.iloc[i])
-                denominator +=serie.iloc[i]
+    values = []
+    for column in data.columns:
+        denominator = 0
+        numerator = 0
+        for i in range(len(data[column])-1):
+            if pd.notna(data[column][i]) and pd.notna(data[column][i+1]):
+                numerator += abs(data[column][i+1]-data[column][i])
+                denominator += data[column][i]
+        if pd.notna(data[column][-2]) and pd.notna(data[column][-1]):
+            denominator += data[column][-1]
         rbf = numerator/denominator
-        df['RBF'].loc[column] = rbf
+        values.append(rbf)
+    df = pd.DataFrame({'RBF':values}, index=data.columns)
     return df
 
 def slope_fdc(data):
-    import math
-    df = pd.DataFrame(index=data.columns.values, columns=['SFDC'])
-    for column in list(data.columns.values):
-        serie = pd.Series(data[column], name=column).dropna()
+    values = []
+    for column in data.columns:
         try:
-            sfdc = (math.log(serie.quantile(0.67))-math.log(serie.quantile(0.34)))/0.33
+            values.append((math.log(data[column].quantile(.67))-math.log(data[column].quantile(.34)))/.33)
         except:
-            sfdc=0
-        df['SFDC'].loc[column] = sfdc
+            values.append(np.nan)
+    df = pd.DataFrame({'SFDC':values}, index=data.columns)
     return df
     
 def baseflow_index(data):
-    df = pd.DataFrame(index=data.columns.values, columns=['IBF'])
-    for column in list(data.columns.values):
-        serie = pd.Series(data[column], name=column).dropna()
-        ibf = serie.rolling(7).mean().min()/serie.mean()
-        df['IBF'].loc[column] = ibf
+    values = []
+    for column in data.columns:
+        values.append(data[column].rolling(7).mean().min()/data[column].mean())
+    df = pd.DataFrame({'IBF':values}, index=data.columns)
     return df
+
+def peak_distribution(data):
+    values = []
+    for column in data.columns:
+        try:
+            values.append((data[column].quantile(.9)-data[column].quantile(.5))/.4)
+        except:
+            values.append(np.nan)
+    df = pd.DataFrame({'PD':values}, index=data.columns)
+    return df
+
+def auto_correlation(data):
+    values = []
+    for column in data.columns:
+        values.append(data[column].autocorr())
+    df = pd.DataFrame({'AC':values}, index=data.columns)
+    return df
+
 
 def all_signatures(data):
     df = pd.DataFrame()
@@ -64,4 +72,6 @@ def all_signatures(data):
     df = pd.concat([df, rbf(data)],axis=1)
     df = pd.concat([df, slope_fdc(data)],axis=1)
     df = pd.concat([df, baseflow_index(data)],axis=1)
+    df = pd.concat([df, peak_distribution(data)],axis=1)
+    df = pd.concat([df, auto_correlation(data)],axis=1)
     return df

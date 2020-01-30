@@ -15,32 +15,26 @@ import xarray as xr
 from shapely.geometry import Point
 from osgeo import ogr
 
-watersheds_dir = r'shapefiles\Watersheds.shp'
-longestflowpath_dir=r'shapefiles\LongestFlowPath.shp'
-raster_dir = r'raster/mdt_23s.tif'
-
-
 def physiographic_data(watersheds_dir,longestflowpath_dir, raster_dir):
     watersheds = gpd.read_file(watersheds_dir)
     watersheds.index = watersheds.HydroID
-    watersheds = watersheds[['Name','AreaKm2','PerimeterK']]
+    watersheds = watersheds[['Name','AreaKm2','PerimetKm']]
     longestflowpath = gpd.read_file(longestflowpath_dir)
     longestflowpath.index =longestflowpath.DrainID
     longestflowpath = longestflowpath[['Slp1085','LengthKm']]
+    longestflowpath['Slp1085']=longestflowpath['Slp1085']*100
     df = pd.concat([watersheds,longestflowpath],axis=1)
     df.index = df.Name
     df['KF'] = df['AreaKm2']/(df['LengthKm']**2)
-    df['KC'] = df['PerimeterK']*0.28/(df['AreaKm2']**0.5)
+    df['KC'] = df['PerimetKm']*0.28/(df['AreaKm2']**0.5)
     df.pop('Name')
     df.pop('LengthKm')
-    df.pop('PerimeterK')
+    df.pop('PerimetKm')
     df_raster = extract_from_mask(watersheds_dir,raster_dir)
     df_raster.index = df_raster.Name
     df_raster = df_raster[['Elev_Mean','Elev_std']]
     df = pd.concat([df,df_raster],axis=1)
     return df
-
-
 
 def extract_from_mask(mask_dir,raster_dir):
     shapefile = gpd.read_file(mask_dir)

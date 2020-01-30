@@ -75,16 +75,3 @@ def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=
     return data
 
 
-## Deprecated method 
-def naturalize_flow(observed_flows,natural_flows,reservoirs_discharge,affected_stations):
-    to_sum = pd.DataFrame()
-    for column in natural_flows.columns:
-        to_sum = pd.concat([to_sum,pd.DataFrame({column:(natural_flows[column] - reservoirs_discharge[column])})],axis=1)
-    
-    for column in affected_stations.columns:
-        stations = list(affected_stations[column].dropna())
-        for station in stations:
-            observed_flows[station] = observed_flows[station] + to_sum[column]
-###
-
-
