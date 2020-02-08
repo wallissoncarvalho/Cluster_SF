@@ -7,6 +7,10 @@ Created by the authors.
 import pandas as pd
 import numpy as np
 from dateutil.relativedelta import relativedelta
+import sklearn
+from sklearn.cluster import KMeans
+import scipy.cluster.hierarchy as sch
+from sklearn.cluster import AgglomerativeClustering
 
 
 def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=False):
@@ -74,4 +78,26 @@ def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=
     data=data[stations]
     return data
 
+def calc_high_correlations(correlation):
+    correlations = []
+    for column in correlation.columns:
+        value = 0
+        for i in range(len(correlation[column])):
+            if abs(correlation[column][i])>=.8 and correlation[column][i]!=1:
+                value +=1
+        correlations.append(value)
+    correlations = pd.DataFrame({'High Correlations':correlations},index=correlation.columns)
+    return correlations
 
+def standard_data(data):
+    for column in data.columns:
+        data[column] = (data[column]-data[column].mean())/data[column].std()
+    return data
+
+def return_labels(dados,n_cluters):
+    kmeans = KMeans(n_clusters=n_cluters).fit(dados)
+    label_km = kmeans.labels_
+    ward = sklearn.cluster.AgglomerativeClustering(n_clusters=5).fit(dados)
+    label_w = ward.labels_
+    labels = pd.DataFrame({'Codigo':dados.index,'Label_Kmeans':label_km, 'Label_Ward':label_w})
+    return labels

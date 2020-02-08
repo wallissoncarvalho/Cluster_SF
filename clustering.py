@@ -9,47 +9,47 @@ import geopandas as gpd
 def kmeans_ward_evaluation(dados):
     classes =[]
     db = []
-    for i in range(20):
+    for i in range(19):
         classes.append(i+2)
         kmeans = KMeans(n_clusters=i+2).fit(dados)
         labels = kmeans.labels_
         db.append(sklearn.metrics.davies_bouldin_score(dados, labels))
-    db_k = pd.DataFrame({'classes':classes,'DB_KM':db})
-    db_k.index = db_k.classes
-    db_k.pop('classes')
+    db_k = pd.DataFrame({'NClusters':classes,'DB - K means':db})
+    db_k.index = db_k.NClusters
+    db_k.pop('NClusters')
     
     classes =[]
     si = []
-    for i in range(20):
+    for i in range(19):
         classes.append(i+2)
         kmeans = KMeans(n_clusters=i+2).fit(dados)
         labels = kmeans.labels_
         si.append(sklearn.metrics.silhouette_score(dados, labels))
-    si_k = pd.DataFrame({'classes':classes,'SI_KM':si})
-    si_k.index = si_k.classes
-    si_k.pop('classes')
+    si_k = pd.DataFrame({'NClusters':classes,'SC(i) - K means':si})
+    si_k.index = si_k.NClusters
+    si_k.pop('NClusters')
     
     classes =[]
     db = []
-    for i in range(20):
+    for i in range(19):
         classes.append(i+2)
         ward = sklearn.cluster.AgglomerativeClustering(n_clusters=i+2).fit(dados)
         labels = ward.labels_
         db.append(sklearn.metrics.davies_bouldin_score(dados, labels))
-    db_w = pd.DataFrame({'classes':classes,'DB_W':db})
-    db_w.index = db_w.classes
-    db_w.pop('classes')
+    db_w = pd.DataFrame({'NClusters':classes,'DB - Ward':db})
+    db_w.index = db_w.NClusters
+    db_w.pop('NClusters')
 
     classes =[]
     si = []
-    for i in range(20):
+    for i in range(19):
         classes.append(i+2)
         ward = sklearn.cluster.AgglomerativeClustering(n_clusters=i+2).fit(dados)
         labels = ward.labels_
         si.append(sklearn.metrics.silhouette_score(dados, labels))
-    si_w = pd.DataFrame({'classes':classes,'SI_W':si})    
-    si_w.index = si_w.classes
-    si_w.pop('classes')
+    si_w = pd.DataFrame({'NClusters':classes,'SC(i) - Ward':si})    
+    si_w.index = si_w.NClusters
+    si_w.pop('NClusters')
     
     df = pd.concat([db_k, db_w, si_k, si_w],axis=1)
     return df

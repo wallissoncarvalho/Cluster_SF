@@ -6,8 +6,13 @@ Created by the authors.
 
 import pandas as pd
 import numpy as np
+from matplotlib import pyplot as plt
 from plotly.offline import plot
 import plotly.figure_factory as ff
+from scipy.cluster.hierarchy import dendrogram
+from sklearn.cluster import AgglomerativeClustering
+import clustering
+
 
 def gantt(dados,nome_grafico,mensal=True): 
     """
@@ -48,11 +53,10 @@ def gantt(dados,nome_grafico,mensal=True):
     plot(fig,filename=nome_grafico +'.html')
     return
 
-def plot_correlation_matrix(data):
+def correlation_matrix(data):
     import seaborn as sns
     corr = data.corr(method='spearman')
-    ax = sns.heatmap(
-        corr,
+    ax = sns.heatmap(corr,
         vmin=-1, vmax=1, center=0,
         cmap=sns.diverging_palette(20, 220, n=200),
         square=True
@@ -60,6 +64,61 @@ def plot_correlation_matrix(data):
     ax.set_xticklabels(
         ax.get_xticklabels(),
         rotation=45,
+        fontsize=7,
         horizontalalignment='right'
     )
+    ax.set_yticklabels(
+        ax.get_yticklabels(),
+        fontsize=7,
+    )
     return
+
+def cluster_evaluation(data):
+    clusters=clustering.kmeans_ward_evaluation(data)
+    db = clusters[['DB - K means','DB - Ward']].rename(columns={'DB - K means':'K means','DB - Ward':'Ward'})
+    si = clusters[['SC(i) - K means','SC(i) - Ward']].rename(columns={'SC(i) - K means':'K means','SC(i) - Ward':'Ward'})
+    
+    fig, (ax1, ax2) = plt.subplots(2, 1,sharex=True)
+    fig.subplots_adjust(hspace=0.7)
+    ax1.plot(db)
+    ax1.title.set_text('Davies Boldin Index')
+
+    ax1.set_xlabel('Number of Clusters')
+
+    ax2.plot(si)
+    ax2.title.set_text('Silhouette Coefficient')
+
+    ax2.set_xlabel('Number of Clusters')
+    plt.xticks(list(range(2,21)))
+    plt.show()
+
+def dendogram(X):
+    def create_dendogram(model, **kwargs):
+        # Create linkage matrix and then plot the dendrogram
+    
+        # create the counts of samples under each node
+        counts = np.zeros(model.children_.shape[0])
+        n_samples = len(model.labels_)
+        for i, merge in enumerate(model.children_):
+            current_count = 0
+            for child_idx in merge:
+                if child_idx < n_samples:
+                    current_count += 1  # leaf node
+                else:
+                    current_count += counts[child_idx - n_samples]
+            counts[i] = current_count
+    
+        linkage_matrix = np.column_stack([model.children_, model.distances_,
+                                          counts]).astype(float)
+    
+        # Plot the corresponding dendrogram
+        dendrogram(linkage_matrix, **kwargs)
+    # setting distance_threshold=0 ensures we compute the full tree.
+    model = AgglomerativeClustering(distance_threshold=0, n_clusters=None)
+    
+    model = model.fit(X)
+    plt.title('Hierarchical Clustering Dendrogram')
+    # plot the top three levels of the dendrogram
+    create_dendogram(model, truncate_mode='level', p=3)
+    plt.xlabel("Number of points in node (or index of point if no parenthesis).")
+    plt.show()
