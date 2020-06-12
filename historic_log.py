@@ -12,8 +12,6 @@ import flowsignatures
 #import geoprocessing
 #import clustering
 
-
-
 """
 STEP 1 - GET AND PLOT ALL FLOW STATIONS DATA
 """
@@ -27,9 +25,8 @@ observed_flows_consisted.to_pickle(r'data/all_observed_consisted_flows.pkl') #Sa
 """
 STEP 2 - REMOVING AFFECTED STATIONS BY RESERVOIRS
 """
-affected_stations = pd.read_pickle(r'data\affected_stations_final.pkl').melt()['value'].dropna().to_list()
-affected_stations.remove('48017000') # REMOVE A STATION THAT IS NOT IN OBSERVED FLOWS CONSISTED
-#affected_stations = affected_stations + ['46105000'] #NOT USED YET
+affected_stations = pd.read_pickle(r'data\affected_stations.pkl').melt()['value'].dropna().to_list()
+affected_stations = affected_stations + ['44950000'] #UNCONSISTED STATION
 observed_flows_consisted.drop(affected_stations,axis=1,inplace=True)
 
 """
@@ -43,8 +40,15 @@ STEP 4 - FILTERING STATIONS
 """
 observed_flows = methods.stations_filter(observed_flows_consisted,start_date='01/01/1995',end_date='31/12/2014')
 observed_flows.to_pickle(r'data/observed_flows.pkl') #Saving filtered data
+observed_flows_shapefile=bhsf_flu.loc[bhsf_flu['Code'].isin(list(observed_flows.columns))]
+observed_flows_shapefile.to_file(r'shapefiles\observed_flows.shp')
 
 """
 STEP 5 - FLOW SIGNATURES GENERATION
 """
 signatures = flowsignatures.all_signatures(observed_flows)
+signatures.to_pickle(r'data/signatures.pkl')
+
+"""
+STEP 6 - PHYSIOGRAFIC DATA
+"""
