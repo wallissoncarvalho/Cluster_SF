@@ -9,52 +9,111 @@ import numpy as np
 from matplotlib import pyplot as plt
 from plotly.offline import plot
 import plotly.figure_factory as ff
+import plotly.graph_objects as go
+import seaborn as sns
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
 import clustering
 
+def gantt(data, graph_name='gant_plot', monthly=True):
+    """
+    Make the Gantt plot. This graphic shows the temporal data availability for each station.
+    :param data:A Pandas daily DataFrame with DatetimeIndex where each column corresponds to a station.
+    :param graph_name: str, optional, default: True
+    Defines the name of the exported graph
+    :param monthly: boolean, optional, default: True
+    Defines if the availability count of the data will be monthly to obtain a more fluid graph.
+    """
+    stations_with_data = []
+    periods = []
+    date_index = pd.date_range(data.index[0], data.index[-1], freq='D')
+    data = data.reindex(date_index)
+    for column in data.columns:
+        series = data[column]
+        if monthly:
+            missing = series.isnull().groupby(pd.Grouper(freq='1MS')).sum().to_frame()
+            series_drop = missing.loc[missing[column] < 7]  # A MONTH WITHOUT 7 DATA IS CONSIDERED A MISSING MONTH
+            DELTA = 'M'
+        else:
+            series_drop = series.dropna()
+            DELTA = 'D'
+        if series_drop.shape[0] > 1:
+            stations_with_data.append(column)
+            task = column
+            resource = 'Available data'
+            start = str(series_drop.index[0].year) + '-' + str(series_drop.index[0].month) + '-' + str(
+                series_drop.index[0].day)
+            finish = 0
+            for i in range(len(series_drop)):
+                if i != 0 and round((series_drop.index[i]-series_drop.index[i - 1])/np.timedelta64(1, DELTA), 0) != 1:
+                    finish = str(series_drop.index[i - 1].year) + '-' + str(series_drop.index[i - 1].month) + '-' + str(
+                        series_drop.index[i - 1].day)
+                    periods.append(dict(Task=task, Start=start, Finish=finish, Resource=resource))
+                    start = str(series_drop.index[i].year) + '-' + str(series_drop.index[i].month) + '-' + str(
+                        series_drop.index[i].day)
+                    finish = 0
+            finish = str(series_drop.index[-1].year) + '-' + str(series_drop.index[-1].month) + '-' + str(
+                series_drop.index[-1].day)
+            periods.append(dict(Task=task, Start=start, Finish=finish, Resource=resource))
+        else:
+            print('Station {} has no months with significant data'.format(column))
+    periods = pd.DataFrame(periods)
+    start_year = periods['Start'].apply(lambda x:int(x[:4])).min()
+    finish_year = periods['Start'].apply(lambda x:int(x[:4])).max()
+    colors = {'Available data': 'rgb(0,191,255)'}
+    fig = ff.create_gantt(periods, colors=colors, index_col='Resource', show_colorbar=True, showgrid_x=True,
+                          showgrid_y=True, height=(200+len(stations_with_data)*30),width=1800, group_tasks=True)
+    
+    fig.layout.xaxis.tickvals = pd.date_range('1/1/'+str(start_year),'12/31/'+str(finish_year+1), freq='2AS')
+    fig.layout.xaxis.ticktext = pd.date_range('1/1/'+str(start_year),'12/31/'+str(finish_year+1), freq='2AS').year
+    fig.layout.xaxis.title = 'Year'
+    fig.layout.yaxis.title = 'Station Code'
+    fig = go.FigureWidget(fig)
+    fig.update_layout(font=dict(family="Courier New, monospace",size=15))
+    plot(fig,filename=graph_name + '.html')
+    stations_with_data = {'Station Code': stations_with_data}
+    stations_with_data = pd.DataFrame(data=stations_with_data)
+    return stations_with_data
 
-def gantt(dados,nome_grafico,mensal=True): 
+
+def available_stations_year(data):
     """
-    For this function, you need a DataFrame structure with flow stations on columns and the measurements at each time on the rows. 
-    The index must be a datetime.
-    Plots the Gantt graph for passed data, showing temporal data availability;
+    Make a bar plot for the number of stations with available data on each year. The plotting regards three possibilities
+    of missing data on each station, which are until 5%, 10%, and 15%.
+    :param data: A Pandas daily DataFrame with DatetimeIndex where each column corresponds to a station.
     """
-    postos_com_dados=[]
-    periodos = []
-    for column in dados.columns:
-        serie = dados[column]
-        if mensal==True:
-            falhas=serie.isnull().groupby(pd.Grouper(freq='1MS')).sum().to_frame()
-            serie_drop=falhas.loc[falhas[column] < 7] #UM MÊS COM AUSÊNCIA DE 7 DADOS É CONSIDERADO COM FALHA
-            DELTA='M'
-        else:
-            serie_drop = serie.dropna() 
-            DELTA='D'
-        if serie_drop.shape[0]>1:
-            postos_com_dados.append(column)
-            Task1=column
-            Resource1='Periodo com Dados'      
-            Start1 = str(serie_drop.index[0].year)+'-'+str(serie_drop.index[0].month)+'-'+str(serie_drop.index[0].day)
-            Finish1 = 0
-            for i in range(len(serie_drop)):
-                if i!=0 and round((serie_drop.index[i]-serie_drop.index[i-1])/np.timedelta64(1,DELTA),0) != 1:
-                    Finish1=str(serie_drop.index[i-1].year)+'-'+str(serie_drop.index[i-1].month)+'-'+str(serie_drop.index[i-1].day)
-                    periodos.append(dict(Task=Task1,Start=Start1,Finish=Finish1,Resource=Resource1))
-                    Start1 = str(serie_drop.index[i].year)+'-'+str(serie_drop.index[i].month)+'-'+str(serie_drop.index[i].day)
-                    Finish1 = 0
-            Finish1 = str(serie_drop.index[-1].year)+'-'+str(serie_drop.index[-1].month)+'-'+str(serie_drop.index[-1].day)
-            periodos.append(dict(Task=Task1,Start=Start1,Finish=Finish1,Resource=Resource1))
-        else:
-            print('Posto {} não possui meses com dados significativos'.format(column))
-    periodos=pd.DataFrame(periodos)
-    colors={'Periodo com Dados': 'rgb(0,191,255)'}
-    fig = ff.create_gantt(periodos, colors=colors, index_col='Resource', show_colorbar=True,showgrid_x=True, showgrid_y=True, height=(200+len(postos_com_dados)*30),width=1800, group_tasks=True)
-    plot(fig,filename=nome_grafico +'.html')
-    return
+    years = list(set(data.index.year))
+    list_5, list_10, list_15 = [], [], []
+    for year in years:
+        series = data.loc[data.index.year == year]
+        missing = series.isnull().sum().to_frame()
+        list_5.append(len(list(missing.loc[missing[missing.columns[0]] < 19].index)))
+        list_10.append(len(list(missing.loc[missing[missing.columns[0]] < 37].index)))
+        list_15.append(len(list(missing.loc[missing[missing.columns[0]] < 55].index)))
+    cut = 0
+    while list_5[cut] == 0 and list_10[cut] == 0 and list_15[cut] == 0:
+        cut += 1
+    years = years[cut + 1:-1]
+    list_5 = list_5[cut + 1:-1]
+    list_10 = list_10[cut + 1:-1]
+    list_15 = list_15[cut + 1:-1]
+    plt.figure(num=None, figsize=(12, 9), dpi=300, facecolor='w', edgecolor='k')
+    #_ = plt.bar(years, list_15, .8)
+    #_ = plt.bar(years, list_10, .8)
+    _ = plt.bar(years, list_5, .8)
+    plt.ylabel('Number of stations', fontsize=14)
+    plt.xlabel('Years', fontsize=14)
+    plt.xticks(np.arange(min(years), max(years), 1),rotation='vertical')
+    plt.yticks(np.arange(0, max(list_15), 10))
+    plt.rc('xtick', labelsize=12)
+    plt.rc('ytick', labelsize=12)
+    #plt.legend(('15%', '10%', '5%'))
+    plt.show()
+    asy = pd.DataFrame({'15%':list_15,'10%':list_10,'5%':list_5},index=years)
+    return asy
+
 
 def correlation_matrix(data):
-    import seaborn as sns
     corr = data.corr(method='spearman')
     ax = sns.heatmap(corr,
         vmin=-1, vmax=1, center=0,

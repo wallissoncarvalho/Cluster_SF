@@ -1,3 +1,9 @@
+'''
+Created by the authors.
+@wallissoncarvalho
+@machadoyang
+'''
+
 import sklearn
 from sklearn.cluster import KMeans
 import scipy.cluster.hierarchy as sch

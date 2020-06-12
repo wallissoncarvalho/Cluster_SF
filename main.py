@@ -3,7 +3,6 @@ Created by the authors.
 @wallissoncarvalho
 @machadoyang
 '''
-
 import pandas as pd
 import methods
 import geoprocessing

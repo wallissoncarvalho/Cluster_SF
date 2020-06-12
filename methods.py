@@ -6,6 +6,7 @@ Created by the authors.
 
 import pandas as pd
 import numpy as np
+from tqdm import tqdm
 from dateutil.relativedelta import relativedelta
 import sklearn
 from sklearn.cluster import KMeans
@@ -13,7 +14,7 @@ import scipy.cluster.hierarchy as sch
 from sklearn.cluster import AgglomerativeClustering
 
 
-def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=False):
+def stations_filter(data,n_years=10,missing_percent=5,start_date=False,end_date=False):
     '''
     For this function, you need a DataFrame structure with flow stations on columns and the measurements at each time on the rows. 
     This function selects stations with at least n_years of data between the first and the last one registered flow.
@@ -42,8 +43,7 @@ def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=
     #FILTRO 2: Checks if there is at least one period with 10 years of registered records and max missing_percent.
     stations=[]
     state = 0
-    for column in data.columns:
-        print('Loading {}%'.format(round(state/len(data.columns)*100,1)))
+    for column in tqdm(data.columns):
         series = data[column]
         series_drop = series.dropna()    
         periodos = []
@@ -74,7 +74,6 @@ def filter_stations(data,n_years=10,missing_percent=5,start_date=False,end_date=
                 else:
                     aux=1
         state+=1
-    print('Fully Completed')
     data=data[stations]
     return data
 
