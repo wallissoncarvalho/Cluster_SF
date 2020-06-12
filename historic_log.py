@@ -10,7 +10,7 @@ import plot
 import methods
 import flowsignatures
 import geoprocessing
-#import clustering
+import clustering
 
 """
 STEP 1 - GET AND PLOT ALL FLOW STATIONS DATA
@@ -47,46 +47,42 @@ observed_flows_shapefile.to_file(r'shapefiles\observed_flows.shp')
 STEP 5 - FLOW SIGNATURES GENERATION
 """
 signatures = flowsignatures.all_signatures(observed_flows)
-signatures.to_pickle(r'data/signatures.pkl')
+signatures.to_pickle(r'data/signatures.pkl') #Saving signatures data
 
 """
 STEP 6 - PHYSIOGRAFIC DATA
 """
 physiographic_data = geoprocessing.physiographic_data(r'shapefiles\Watersheds.shp',r'shapefiles\LongestFlowPath.shp',r'raster/mdt_23s.tif')
-physiographic_data.to_pickle(r'data/physiographic_data.pkl')
+physiographic_data.to_pickle(r'data/physiographic_data.pkl') #Saving physiographic data
 
 """
-STEP 7 - GENERATING AND #STANDARIZING ALL PARAMETERS
+STEP 7 - GENERATING AND STANDARIZING ALL PARAMETERS
 """
+all_parameters = pd.concat([physiographic_data,signatures],axis=1, sort=True)
+all_parameters['Q90'] = all_parameters['Q90']/all_parameters['AreaKm2']
+all_parameters['Q10'] = all_parameters['Q10']/all_parameters['AreaKm2']
+all_parameters['Qmean'] = all_parameters['Qmean']/all_parameters['AreaKm2']
+all_parameters=all_parameters.rename(columns={'AreaKm2':'Area','Slp1085':'$S_{10-85}$','Elev_Mean':'$E_{mean}$','Elev_std':'$E_{std}$',
+                                              'Q90':'$Q_{90}$','Qmean':'$Q_{mean}$','Q10':'$Q_{10}$','RBF':'$RB_{Flash}$',
+                                              'SFDC':'$S_{FDC}$','IBF':'$I_{BF}$'}) #Renaming columns to plot
+all_parameters = methods.standard_data(all_parameters)
+all_parameters.to_pickle(r'data/all_parameters.pkl')
 
 """
 STEP 8 - ANALYZING CORRELATIONS
 """
+correlation = all_parameters.corr(method='spearman')
+calc_correlations = methods.calc_high_correlations(correlation)
+plot.correlation_matrix(all_parameters)
+
+#Removing High Correlations
+all_parameters.pop('Area')
+all_parameters.pop('$S_{FDC}$')
+all_parameters.pop('AC')
 
 """
 STEP 9 - CLUSTERING ASSESSMENT
 """
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+cluster = clustering.kmeans_ward_evaluation(all_parameters)
+plot.cluster_evaluation(all_parameters)
+plot.dendogram(all_parameters)
