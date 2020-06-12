@@ -93,17 +93,21 @@ def available_stations_year(data):
     cut = 0
     while list_5[cut] == 0 and list_10[cut] == 0 and list_15[cut] == 0:
         cut += 1
-    years = years[cut + 1:-1]
-    list_5 = list_5[cut + 1:-1]
-    list_10 = list_10[cut + 1:-1]
-    list_15 = list_15[cut + 1:-1]
+#    years = years[cut + 1:-1]
+#    list_5 = list_5[cut + 1:-1]
+#    list_10 = list_10[cut + 1:-1]
+#    list_15 = list_15[cut + 1:-1]
+    years = years[cut:]
+    list_5 = list_5[cut:]
+    list_10 = list_10[cut:]
+    list_15 = list_15[cut:]
     plt.figure(num=None, figsize=(12, 9), dpi=300, facecolor='w', edgecolor='k')
     #_ = plt.bar(years, list_15, .8)
     #_ = plt.bar(years, list_10, .8)
     _ = plt.bar(years, list_5, .8)
     plt.ylabel('Number of stations', fontsize=14)
     plt.xlabel('Years', fontsize=14)
-    plt.xticks(np.arange(min(years), max(years), 1),rotation='vertical')
+    plt.xticks(np.arange(min(years), max(years), 3),rotation='vertical')
     plt.yticks(np.arange(0, max(list_15), 10))
     plt.rc('xtick', labelsize=12)
     plt.rc('ytick', labelsize=12)
