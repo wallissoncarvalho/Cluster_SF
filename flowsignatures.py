@@ -6,7 +6,6 @@ Created by the authors.
 
 import pandas as pd
 import numpy as np
-import math
 
 def quantiles(data):
     return pd.DataFrame({'Q90':data.quantile(.1),'Qmean':data.mean(),'Q10':data.quantile(.9)})
@@ -29,17 +28,7 @@ def rbf(data):
         values.append(rbf)
     df = pd.DataFrame({'RBF':values}, index=data.columns)
     return df
-
-def slope_fdc(data):
-    values = []
-    for column in data.columns:
-        try:
-            values.append((math.log(data[column].quantile(.67))-math.log(data[column].quantile(.34)))/.33)
-        except:
-            values.append(np.nan)
-    df = pd.DataFrame({'SFDC':values}, index=data.columns)
-    return df
-    
+   
 def baseflow_index(data):
     values = []
     for column in data.columns:
@@ -70,7 +59,6 @@ def all_signatures(data):
     df = pd.concat([df, quantiles(data)],axis=1)
     df = pd.concat([df, coefficient_variation(data)],axis=1)
     df = pd.concat([df, rbf(data)],axis=1)
-    df = pd.concat([df, slope_fdc(data)],axis=1)
     df = pd.concat([df, baseflow_index(data)],axis=1)
     df = pd.concat([df, peak_distribution(data)],axis=1)
     df = pd.concat([df, auto_correlation(data)],axis=1)

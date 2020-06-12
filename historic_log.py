@@ -62,9 +62,9 @@ all_parameters = pd.concat([physiographic_data,signatures],axis=1, sort=True)
 all_parameters['Q90'] = all_parameters['Q90']/all_parameters['AreaKm2']
 all_parameters['Q10'] = all_parameters['Q10']/all_parameters['AreaKm2']
 all_parameters['Qmean'] = all_parameters['Qmean']/all_parameters['AreaKm2']
-all_parameters=all_parameters.rename(columns={'AreaKm2':'Area','Slp1085':'$S_{10-85}$','Elev_Mean':'$E_{mean}$','Elev_std':'$E_{std}$',
-                                              'Q90':'$Q_{90}$','Qmean':'$Q_{mean}$','Q10':'$Q_{10}$','RBF':'$RB_{Flash}$',
-                                              'SFDC':'$S_{FDC}$','IBF':'$I_{BF}$'}) #Renaming columns to plot
+all_parameters=all_parameters.rename(columns={'AreaKm2':'Area', 'Slp1085':'$S_{10-85}$', 'Elev_Mean':'$E_{mean}$',
+                                              'Elev_std':'$E_{std}$', 'Q90':'$Q_{90}$','Qmean':'$Q_{mean}$',
+                                              'Q10':'$Q_{10}$','RBF':'$RB_{Flash}$','IBF':'$I_{BF}$'}) #Renaming columns to plot
 all_parameters = methods.standard_data(all_parameters)
 all_parameters.to_pickle(r'data/all_parameters.pkl')
 
@@ -77,7 +77,6 @@ plot.correlation_matrix(all_parameters)
 
 #Removing High Correlations
 all_parameters.pop('Area')
-all_parameters.pop('$S_{FDC}$')
 all_parameters.pop('AC')
 
 """
