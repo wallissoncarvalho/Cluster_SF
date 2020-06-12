@@ -119,6 +119,7 @@ def available_stations_year(data):
 
 def correlation_matrix(data):
     corr = data.corr(method='spearman')
+    plt.figure(num=None, figsize=(12, 12), dpi=300, facecolor='w', edgecolor='k')
     ax = sns.heatmap(corr,
         vmin=-1, vmax=1, center=0,
         cmap=sns.diverging_palette(20, 220, n=200),
@@ -127,12 +128,12 @@ def correlation_matrix(data):
     ax.set_xticklabels(
         ax.get_xticklabels(),
         rotation=45,
-        fontsize=7,
+        fontsize=12,
         horizontalalignment='right'
     )
     ax.set_yticklabels(
         ax.get_yticklabels(),
-        fontsize=7,
+        fontsize=12,
     )
     return
 

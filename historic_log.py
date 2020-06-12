@@ -67,21 +67,25 @@ all_parameters=all_parameters.rename(columns={'AreaKm2':'Area', 'Slp1085':'$S_{1
                                               'Q10':'$Q_{10}$','RBF':'$RB_{Flash}$','IBF':'$I_{BF}$'}) #Renaming columns to plot
 all_parameters = methods.standard_data(all_parameters)
 all_parameters.to_pickle(r'data/all_parameters.pkl')
-
 """
 STEP 8 - ANALYZING CORRELATIONS
 """
+#Calculate Correlations - All Parameters
 correlation = all_parameters.corr(method='spearman')
 calc_correlations = methods.calc_high_correlations(correlation)
 plot.correlation_matrix(all_parameters)
 
 #Removing High Correlations
-all_parameters.pop('Area')
-all_parameters.pop('AC')
+final_parameters = all_parameters.drop(['Area','AC','CV'],axis=1)
+
+#Calculate Correlations - Final Parameters
+correlation_final = all_parameters.corr(method='spearman')
+calc_correlations_final = methods.calc_high_correlations(correlation_final)
+plot.correlation_matrix(final_parameters)
 
 """
 STEP 9 - CLUSTERING ASSESSMENT
 """
-cluster = clustering.kmeans_ward_evaluation(all_parameters)
-plot.cluster_evaluation(all_parameters)
-plot.dendogram(all_parameters)
+cluster = clustering.kmeans_ward_evaluation(final_parameters)
+plot.cluster_evaluation(final_parameters)
+plot.dendogram(final_parameters)
