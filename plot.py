@@ -14,6 +14,7 @@ import seaborn as sns
 from scipy.cluster.hierarchy import dendrogram
 from sklearn.cluster import AgglomerativeClustering
 import clustering
+from sklearn.decomposition import PCA
 
 def gantt(data, graph_name='gant_plot', monthly=True):
     """
@@ -75,6 +76,26 @@ def gantt(data, graph_name='gant_plot', monthly=True):
     stations_with_data = pd.DataFrame(data=stations_with_data)
     return stations_with_data
 
+def pca_components(data_rescaled):
+    pca = PCA().fit(data_rescaled)
+    plt.rcParams["figure.figsize"] = (10,8)
+    plt.rcParams["figure.dpi"] = 300
+    fig, ax = plt.subplots()
+    xi = np.arange(1, len(data_rescaled.columns)+1, step=1)
+    y = np.cumsum(pca.explained_variance_ratio_)   
+    plt.ylim(0.0,1.1)
+    plt.plot(xi, y, marker='o', linestyle='-', color='b')
+    
+    plt.xlabel('Number of Components',fontsize=8)
+    plt.xticks(np.arange(1, len(data_rescaled.columns)+1, step=1)) #change from 0-based array index to 1-based human-readable label
+    plt.ylabel('Cumulative variance (%)',fontsize=8)
+    plt.title('The number of components needed to explain variance', fontsize=8)
+    
+    plt.axhline(y=0.8, color='r', linestyle='--')
+    plt.text(0.5, 0.85, '80% cut-off threshold', color = 'red', fontsize=6)
+    ax.grid(axis='x')
+    plt.show()
+
 
 def available_stations_year(data):
     """
@@ -120,21 +141,9 @@ def available_stations_year(data):
 def correlation_matrix(data):
     corr = data.corr(method='spearman')
     plt.figure(num=None, figsize=(12, 12), dpi=300, facecolor='w', edgecolor='k')
-    ax = sns.heatmap(corr,
-        vmin=-1, vmax=1, center=0,
-        cmap=sns.diverging_palette(20, 220, n=200),
-        square=True
-    )
-    ax.set_xticklabels(
-        ax.get_xticklabels(),
-        rotation=45,
-        fontsize=12,
-        horizontalalignment='right'
-    )
-    ax.set_yticklabels(
-        ax.get_yticklabels(),
-        fontsize=12,
-    )
+    ax = sns.heatmap(corr, vmin=-1, vmax=1, center=0, cmap=sns.diverging_palette(20, 220, n=200),square=True)
+    ax.set_xticklabels(ax.get_xticklabels(), rotation=45, fontsize=12, horizontalalignment='right')
+    ax.set_yticklabels(ax.get_yticklabels(),rotation=45, fontsize=10)
     return
 
 def cluster_evaluation(data):
@@ -156,7 +165,7 @@ def cluster_evaluation(data):
     plt.xticks(list(range(2,21)))
     plt.show()
 
-def dendogram(X):
+def dendogram(X, level=3):
     def create_dendogram(model, **kwargs):
         # Create linkage matrix and then plot the dendrogram
     
@@ -183,6 +192,6 @@ def dendogram(X):
     model = model.fit(X)
     plt.title('Hierarchical Clustering Dendrogram')
     # plot the top three levels of the dendrogram
-    create_dendogram(model, truncate_mode='level', p=3)
+    create_dendogram(model, truncate_mode='level', p=level)
     plt.xlabel("Number of points in node (or index of point if no parenthesis).")
     plt.show()
