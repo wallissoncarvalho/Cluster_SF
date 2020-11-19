@@ -11,6 +11,11 @@ import methods
 import flowsignatures
 import geoprocessing
 import clustering
+from sklearn.preprocessing import StandardScaler
+import hydrobr
+from sklearn.decomposition import PCA
+from sklearn.preprocessing import MinMaxScaler
+import numpy as np
 
 """
 STEP 1 - GET AND PLOT ALL FLOW STATIONS DATA
@@ -55,38 +60,52 @@ STEP 6 - PHYSIOGRAFIC DATA
 physiographic_data = geoprocessing.physiographic_data(r'shapefiles\Watersheds.shp',r'shapefiles\LongestFlowPath.shp',r'raster/mdt_23s.tif')
 physiographic_data.to_pickle(r'data/physiographic_data.pkl') #Saving physiographic data
 
+# Verifying the areas
+stations_area = hydrobr.get_data.ANA.list_flow_stations()
+stations_area = stations_area[stations_area.Code.isin(physiographic_data.index.to_list())]
+stations_area.index = stations_area.Code
+stations_area = pd.concat([stations_area[['DrainageArea']], physiographic_data[['AreaKm2']].rename(index={'Name':'Code'})], axis=1)
+stations_area['AreaError'] = 100*abs((stations_area['AreaKm2'] - stations_area['DrainageArea'])/stations_area['AreaKm2'])
+stations_area=stations_area[stations_area['AreaError']>25]
+
 """
-STEP 7 - GENERATING AND STANDARIZING ALL PARAMETERS
+STEP 7 - GENERATING ALL PARAMETERS
 """
+signatures = pd.read_pickle(r'data/signatures.pkl')
+physiographic_data = pd.read_pickle(r'data/physiographic_data.pkl')
 all_parameters = pd.concat([physiographic_data,signatures],axis=1, sort=True)
+all_parameters = all_parameters.loc[~all_parameters.index.isin(stations_area.index.to_list())]
+all_parameters.to_pickle(r'data/all_parameters.pkl') #Saving all parameters
+
+"""
+STEP 8 - STANDARIZING ALL PARAMETERS
+"""
 all_parameters['Q90'] = all_parameters['Q90']/all_parameters['AreaKm2']
 all_parameters['Q10'] = all_parameters['Q10']/all_parameters['AreaKm2']
 all_parameters['Qmean'] = all_parameters['Qmean']/all_parameters['AreaKm2']
-all_parameters=all_parameters.rename(columns={'AreaKm2':'Area', 'Slp1085':'$S_{10-85}$', 'Elev_Mean':'$E_{mean}$',
-                                              'Elev_std':'$E_{std}$', 'Q90':'$Q_{90}$','Qmean':'$Q_{mean}$',
-                                              'Q10':'$Q_{10}$','RBF':'$RB_{Flash}$','IBF':'$I_{BF}$'}) #Renaming columns to plot
-all_parameters = methods.standard_data(all_parameters)
-all_parameters.to_pickle(r'data/all_parameters.pkl') #Saving all parameters
-"""
-STEP 8 - ANALYZING CORRELATIONS
-"""
-#Calculate Correlations - All Parameters
-correlation = all_parameters.corr(method='spearman')
-calc_correlations = methods.calc_high_correlations(correlation)
-plot.correlation_matrix(all_parameters)
+all_parameters = all_parameters.drop(['AreaKm2','PD'],axis=1)
 
-#Removing High Correlations
-final_parameters = all_parameters.drop(['Area','AC','CV'],axis=1)
-final_parameters.to_pickle(r'data/final_parameters.pkl') #Saving final parameters
+#scaled_parameters = StandardScaler().fit_transform(all_parameters)
+#scaled_parameters = pd.DataFrame(scaled_parameters, index=all_parameters.index, columns=all_parameters.columns)
 
-#Calculate Correlations - Final Parameters
-correlation_final = all_parameters.corr(method='spearman')
-calc_correlations_final = methods.calc_high_correlations(correlation_final)
-plot.correlation_matrix(final_parameters)
+scaled_parameters = MinMaxScaler().fit_transform(all_parameters)
+scaled_parameters = pd.DataFrame(scaled_parameters, index=all_parameters.index, columns=all_parameters.columns)
+
+'''
+STEP 9 - PCA ANALYSIS
+'''
+plot.pca_components(scaled_parameters)
+pca = PCA(n_components=4)
+principalComponents = pca.fit_transform(scaled_parameters)
+principalComponents = pd.DataFrame(data = principalComponents,
+                           columns = ['principal 1', 'principal 2','principal 3','principal 4'])
+
 
 """
-STEP 9 - CLUSTERING ASSESSMENT
+STEP 10 - CLUSTERING ASSESSMENT
 """
-cluster = clustering.kmeans_ward_evaluation(all_parameters)
-plot.cluster_evaluation(final_parameters)
-plot.dendogram(final_parameters)
+cluster = clustering.kmeans_ward_evaluation(principalComponents)
+plot.cluster_evaluation(principalComponents)
+plot.dendogram(principalComponents)
+
+

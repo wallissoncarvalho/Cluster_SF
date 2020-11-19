@@ -36,15 +36,15 @@ def baseflow_index(data):
     df = pd.DataFrame({'IBF':values}, index=data.columns)
     return df
 
-def peak_distribution(data):
-    values = []
-    for column in data.columns:
-        try:
-            values.append((data[column].quantile(.9)-data[column].quantile(.5))/.4)
-        except:
-            values.append(np.nan)
-    df = pd.DataFrame({'PD':values}, index=data.columns)
-    return df
+#def peak_distribution(data):
+#    values = []
+#    for column in data.columns:
+#        try:
+#            values.append((data[column].quantile(.9)-data[column].quantile(.5))/.4)
+#        except:
+#            values.append(np.nan)
+#    df = pd.DataFrame({'PD':values}, index=data.columns)
+#    return df
 
 def auto_correlation(data):
     values = []
