@@ -15,7 +15,7 @@ import geopandas as gpd
 def kmeans_ward_evaluation(dados):
     classes =[]
     db = []
-    for i in range(19):
+    for i in range(9):
         classes.append(i+2)
         kmeans = KMeans(n_clusters=i+2).fit(dados)
         labels = kmeans.labels_
@@ -26,7 +26,7 @@ def kmeans_ward_evaluation(dados):
     
     classes =[]
     si = []
-    for i in range(19):
+    for i in range(9):
         classes.append(i+2)
         kmeans = KMeans(n_clusters=i+2).fit(dados)
         labels = kmeans.labels_
@@ -37,7 +37,7 @@ def kmeans_ward_evaluation(dados):
     
     classes =[]
     db = []
-    for i in range(19):
+    for i in range(9):
         classes.append(i+2)
         ward = sklearn.cluster.AgglomerativeClustering(n_clusters=i+2).fit(dados)
         labels = ward.labels_
@@ -48,7 +48,7 @@ def kmeans_ward_evaluation(dados):
 
     classes =[]
     si = []
-    for i in range(19):
+    for i in range(9):
         classes.append(i+2)
         ward = sklearn.cluster.AgglomerativeClustering(n_clusters=i+2).fit(dados)
         labels = ward.labels_

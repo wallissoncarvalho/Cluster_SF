@@ -12,71 +12,12 @@ import plotly.figure_factory as ff
 import plotly.graph_objects as go
 import seaborn as sns
 from scipy.cluster.hierarchy import dendrogram
-from sklearn.cluster import AgglomerativeClustering
 import clustering
 from sklearn.decomposition import PCA
+from sklearn.cluster import KMeans, AgglomerativeClustering
+import matplotlib.patheffects as pe
 
-def gantt(data, graph_name='gant_plot', monthly=True):
-    """
-    Make the Gantt plot. This graphic shows the temporal data availability for each station.
-    :param data:A Pandas daily DataFrame with DatetimeIndex where each column corresponds to a station.
-    :param graph_name: str, optional, default: True
-    Defines the name of the exported graph
-    :param monthly: boolean, optional, default: True
-    Defines if the availability count of the data will be monthly to obtain a more fluid graph.
-    """
-    stations_with_data = []
-    periods = []
-    date_index = pd.date_range(data.index[0], data.index[-1], freq='D')
-    data = data.reindex(date_index)
-    for column in data.columns:
-        series = data[column]
-        if monthly:
-            missing = series.isnull().groupby(pd.Grouper(freq='1MS')).sum().to_frame()
-            series_drop = missing.loc[missing[column] < 7]  # A MONTH WITHOUT 7 DATA IS CONSIDERED A MISSING MONTH
-            DELTA = 'M'
-        else:
-            series_drop = series.dropna()
-            DELTA = 'D'
-        if series_drop.shape[0] > 1:
-            stations_with_data.append(column)
-            task = column
-            resource = 'Available data'
-            start = str(series_drop.index[0].year) + '-' + str(series_drop.index[0].month) + '-' + str(
-                series_drop.index[0].day)
-            finish = 0
-            for i in range(len(series_drop)):
-                if i != 0 and round((series_drop.index[i]-series_drop.index[i - 1])/np.timedelta64(1, DELTA), 0) != 1:
-                    finish = str(series_drop.index[i - 1].year) + '-' + str(series_drop.index[i - 1].month) + '-' + str(
-                        series_drop.index[i - 1].day)
-                    periods.append(dict(Task=task, Start=start, Finish=finish, Resource=resource))
-                    start = str(series_drop.index[i].year) + '-' + str(series_drop.index[i].month) + '-' + str(
-                        series_drop.index[i].day)
-                    finish = 0
-            finish = str(series_drop.index[-1].year) + '-' + str(series_drop.index[-1].month) + '-' + str(
-                series_drop.index[-1].day)
-            periods.append(dict(Task=task, Start=start, Finish=finish, Resource=resource))
-        else:
-            print('Station {} has no months with significant data'.format(column))
-    periods = pd.DataFrame(periods)
-    start_year = periods['Start'].apply(lambda x:int(x[:4])).min()
-    finish_year = periods['Start'].apply(lambda x:int(x[:4])).max()
-    colors = {'Available data': 'rgb(0,191,255)'}
-    fig = ff.create_gantt(periods, colors=colors, index_col='Resource', show_colorbar=True, showgrid_x=True,
-                          showgrid_y=True, height=(200+len(stations_with_data)*30),width=1800, group_tasks=True)
-    
-    fig.layout.xaxis.tickvals = pd.date_range('1/1/'+str(start_year),'12/31/'+str(finish_year+1), freq='2AS')
-    fig.layout.xaxis.ticktext = pd.date_range('1/1/'+str(start_year),'12/31/'+str(finish_year+1), freq='2AS').year
-    fig.layout.xaxis.title = 'Year'
-    fig.layout.yaxis.title = 'Station Code'
-    fig = go.FigureWidget(fig)
-    fig.update_layout(font=dict(family="Courier New, monospace",size=15))
-    plot(fig,filename=graph_name + '.html')
-    stations_with_data = {'Station Code': stations_with_data}
-    stations_with_data = pd.DataFrame(data=stations_with_data)
-    return stations_with_data
-
-def pca_components(data_rescaled):
+def pca_ncomponents(data_rescaled):
     pca = PCA().fit(data_rescaled)
     plt.rcParams["figure.figsize"] = (10,8)
     plt.rcParams["figure.dpi"] = 300
@@ -85,6 +26,7 @@ def pca_components(data_rescaled):
     y = np.cumsum(pca.explained_variance_ratio_)   
     plt.ylim(0.0,1.1)
     plt.plot(xi, y, marker='o', linestyle='-', color='b')
+    plt.bar(xi, pca.explained_variance_ratio_)
     
     plt.xlabel('Number of Components',fontsize=8)
     plt.xticks(np.arange(1, len(data_rescaled.columns)+1, step=1)) #change from 0-based array index to 1-based human-readable label
@@ -92,6 +34,7 @@ def pca_components(data_rescaled):
     plt.title('The number of components needed to explain variance', fontsize=8)
     
     plt.axhline(y=0.8, color='r', linestyle='--')
+    plt.axvline(x=4, color='r', linestyle='--')
     plt.text(0.5, 0.85, '80% cut-off threshold', color = 'red', fontsize=6)
     ax.grid(axis='x')
     plt.show()
@@ -146,23 +89,84 @@ def correlation_matrix(data):
     ax.set_yticklabels(ax.get_yticklabels(),rotation=45, fontsize=10)
     return
 
-def cluster_evaluation(data):
-    clusters=clustering.kmeans_ward_evaluation(data)
-    db = clusters[['DB - K means','DB - Ward']].rename(columns={'DB - K means':'K means','DB - Ward':'Ward'})
-    si = clusters[['SC(i) - K means','SC(i) - Ward']].rename(columns={'SC(i) - K means':'K means','SC(i) - Ward':'Ward'})
+#def cluster_evaluation(data):
+#    clusters=clustering.kmeans_ward_evaluation(data)
+#    db = clusters[['DB - K means','DB - Ward']].rename(columns={'DB - K means':'K means','DB - Ward':'Ward'})
+#    si = clusters[['SC(i) - K means','SC(i) - Ward']].rename(columns={'SC(i) - K means':'K means','SC(i) - Ward':'Ward'})
+#    
+#    fig, (ax1, ax2) = plt.subplots(2, 1,sharex=True)
+#    fig.subplots_adjust(hspace=0.7)
+#    ax1.plot(db)
+#    ax1.title.set_text('Davies Boldin Index')
+#
+#    ax1.set_xlabel('Number of Clusters')
+#
+#    ax2.plot(si)
+#    ax2.title.set_text('Silhouette Coefficient')
+#
+#    ax2.set_xlabel('Number of Clusters')
+#    plt.xticks(list(range(2,21)))
+#    plt.show()    
+
+def pca_components(scaled_parameters,n_components=4, method='Kmeans', k=3):  
+    pca = PCA()
+    principalComponents = pca.fit_transform(scaled_parameters)
     
-    fig, (ax1, ax2) = plt.subplots(2, 1,sharex=True)
-    fig.subplots_adjust(hspace=0.7)
-    ax1.plot(db)
-    ax1.title.set_text('Davies Boldin Index')
+    most_important = [np.abs(pca.components_[i]).argmax() for i in range(scaled_parameters.shape[1])]
+    most_important_names = [scaled_parameters.columns.to_list()[most_important[i]] for i in range(scaled_parameters.shape[1])]
+    df = pd.DataFrame({'PC {}'.format(i+1): most_important_names[i] for i in range(scaled_parameters.shape[1])}.items(),columns=['PC','Feature'])
+    
+    score=principalComponents[:,0:2]
+    coeff=np.transpose(pca.components_[0:2, :])
+    labels=scaled_parameters.columns.to_list()
+    
+    xs = score[:,0]
+    ys = score[:,1]
+    scalex = 1.0/(xs.max() - xs.min())
+    scaley = 1.0/(ys.max() - ys.min())
+    
+    if method=='Kmeans':
+        kmeans = KMeans(n_clusters=k).fit(scaled_parameters)
+        y = kmeans.labels_
+        plt.title('PCA with points colored by Kmeans')
+    elif method=='Ward':
+        ward = AgglomerativeClustering(n_clusters=k).fit(scaled_parameters)
+        y = ward.labels_
+        plt.title('PCA with points colored by Ward')
+    
+    plt.scatter(xs * scalex,ys * scaley, c=y, zorder=5, edgecolor='white')
+    n = coeff.shape[0]
+    for i in range(n):
+        plt.arrow(0, 0, coeff[i,0], coeff[i,1],color = 'r', zorder=15)
+        plt.text(coeff[i,0]* 1.15, coeff[i,1] * 1.15, labels[i], color = 'g', ha = 'center', va = 'center',
+                 path_effects=[pe.withStroke(linewidth=1, foreground="white")],zorder=20)
+    plt.xlim(-1,1)
+    plt.ylim(-1,1)
+    plt.xlabel("PC {}".format(1))
+    plt.ylabel("PC {}".format(2))
+    plt.grid()
+    plt.show()
+    return df
+       
+def cluster_sc(data):
+    cluster=clustering.kmeans_ward_evaluation(data)
+    si = cluster[['SC(i) - K means','SC(i) - Ward']].rename(columns={'SC(i) - K means':'K means','SC(i) - Ward':'Ward'})
 
-    ax1.set_xlabel('Number of Clusters')
+    plt.rcParams["figure.figsize"] = (10,8)
+    plt.rcParams["figure.dpi"] = 300
 
-    ax2.plot(si)
-    ax2.title.set_text('Silhouette Coefficient')
-
-    ax2.set_xlabel('Number of Clusters')
-    plt.xticks(list(range(2,21)))
+    plt.plot(si['K means'], color='blue', marker='o', linestyle='-')
+    #plt.axvline(x=si['K means'].idxmax(), color='blue', linestyle='--')
+    
+    plt.plot(si['Ward'], color='orange', marker='o', linestyle='-')
+    plt.axvline(x=si['Ward'].idxmax(), color='black', linestyle='--')
+    
+    plt.xticks(np.arange(2, 11, step=1)) 
+    plt.xlabel('Number of Clusters')
+    plt.ylabel('Silhouette Coefficient')
+    plt.title('Optimal number of clusters: \nSilhouette Method')
+    plt.legend(('K-means','Ward'))
+#    plt.xticks(list(range(2,21)))
     plt.show()
 
 def dendogram(X, level=3):
@@ -194,4 +198,5 @@ def dendogram(X, level=3):
     # plot the top three levels of the dendrogram
     create_dendogram(model, truncate_mode='level', p=level)
     plt.xlabel("Number of points in node (or index of point if no parenthesis).")
+    plt.yticks([])
     plt.show()

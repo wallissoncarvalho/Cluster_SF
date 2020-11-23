@@ -59,6 +59,12 @@ STEP 6 - PHYSIOGRAFIC DATA
 """
 physiographic_data = geoprocessing.physiographic_data(r'shapefiles\Watersheds.shp',r'shapefiles\LongestFlowPath.shp',r'raster/mdt_23s.tif')
 physiographic_data.to_pickle(r'data/physiographic_data.pkl') #Saving physiographic data
+"""
+STEP 7 - GENERATING ALL PARAMETERS
+"""
+signatures = pd.read_pickle(r'data/signatures.pkl')
+physiographic_data = pd.read_pickle(r'data/physiographic_data.pkl')
+all_parameters = pd.concat([physiographic_data,signatures],axis=1, sort=True)
 
 # Verifying the areas
 stations_area = hydrobr.get_data.ANA.list_flow_stations()
@@ -68,14 +74,7 @@ stations_area = pd.concat([stations_area[['DrainageArea']], physiographic_data[[
 stations_area['AreaError'] = 100*abs((stations_area['AreaKm2'] - stations_area['DrainageArea'])/stations_area['AreaKm2'])
 stations_area=stations_area[stations_area['AreaError']>25]
 
-"""
-STEP 7 - GENERATING ALL PARAMETERS
-"""
-signatures = pd.read_pickle(r'data/signatures.pkl')
-physiographic_data = pd.read_pickle(r'data/physiographic_data.pkl')
-all_parameters = pd.concat([physiographic_data,signatures],axis=1, sort=True)
 all_parameters = all_parameters.loc[~all_parameters.index.isin(stations_area.index.to_list())]
-all_parameters.to_pickle(r'data/all_parameters.pkl') #Saving all parameters
 
 """
 STEP 8 - STANDARIZING ALL PARAMETERS
@@ -83,7 +82,7 @@ STEP 8 - STANDARIZING ALL PARAMETERS
 all_parameters['Q90'] = all_parameters['Q90']/all_parameters['AreaKm2']
 all_parameters['Q10'] = all_parameters['Q10']/all_parameters['AreaKm2']
 all_parameters['Qmean'] = all_parameters['Qmean']/all_parameters['AreaKm2']
-all_parameters = all_parameters.drop(['AreaKm2','PD'],axis=1)
+all_parameters = all_parameters.drop(['AreaKm2'],axis=1)
 
 #scaled_parameters = StandardScaler().fit_transform(all_parameters)
 #scaled_parameters = pd.DataFrame(scaled_parameters, index=all_parameters.index, columns=all_parameters.columns)
@@ -91,21 +90,41 @@ all_parameters = all_parameters.drop(['AreaKm2','PD'],axis=1)
 scaled_parameters = MinMaxScaler().fit_transform(all_parameters)
 scaled_parameters = pd.DataFrame(scaled_parameters, index=all_parameters.index, columns=all_parameters.columns)
 
+scaled_parameters=scaled_parameters.rename(columns={'Slp1085':'$S_{10-85}$','Elev_Mean':'$E_{mean}$','Elev_std':'$E_{std}$',
+                                              'Q90':'$Q_{90}$','Qmean':'$Q_{mean}$','Q10':'$Q_{10}$','RBF':'$RB_{Flash}$',
+                                              'SFDC':'$S_{FDC}$','IBF':'$I_{BF}$'}) #Renaming columns to plot
+
 '''
 STEP 9 - PCA ANALYSIS
 '''
-plot.pca_components(scaled_parameters)
+plot.pca_ncomponents(scaled_parameters)
 pca = PCA(n_components=4)
 principalComponents = pca.fit_transform(scaled_parameters)
-principalComponents = pd.DataFrame(data = principalComponents,
-                           columns = ['principal 1', 'principal 2','principal 3','principal 4'])
+
+
+principal_components = plot.pca_components(scaled_parameters)
+#principalComponents = pd.DataFrame(data = principalComponents,
+#                           columns = ['PC 1', 'PC 2','PC 3','PC 4'])
+
+#from pca import pca as pca_lib
+#model = pca_lib(n_components=0.8)
+#out = model.fit_transform(scaled_parameters)
+#print(out['topfeat'])
+#ax = model.biplot(n_feat=6,label=False, legend=False)
+#ax = model.scatter()
+#ax = model.biplot3d(n_feat=4, label=False, legend=False)
+
+#Call the function. Use only the 2 PCs.
+plot.pca_components(principalComponents[:,0:2],np.transpose(pca.components_[0:2, :]), labels=scaled_parameters.columns.to_list())
+
+
 
 
 """
 STEP 10 - CLUSTERING ASSESSMENT
 """
 cluster = clustering.kmeans_ward_evaluation(principalComponents)
-plot.cluster_evaluation(principalComponents)
-plot.dendogram(principalComponents)
+plot.cluster_sc(principalComponents)
+plot.dendogram(principalComponents, level=4)
 
 
