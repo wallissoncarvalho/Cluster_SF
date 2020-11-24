@@ -312,3 +312,33 @@ def dendogram(X, level=3):
     plt.xlabel("Number of points in node (or index of point if no parenthesis).")
     plt.yticks([])
     plt.show()
+    
+    
+def monthly_barplot(data, column, figsize=(6.4,4.8)):
+    """
+    Make a monthly bar plot for each station in the same graph. The number of rows and columns depends on the number of
+    stations (i.e., DataFrame Columns) in the provided data.
+    :param data: A Pandas daily DataFrame with DatetimeIndex where each column corresponds to a station.
+    :param n_rows: integer
+    Defines the number of rows in the plotting
+    :param n_columns: integer
+    Defines the number of columns in the plotting
+    :param figsize: (float, float), optional, default: (6.4,4.8)
+    """
+    data.index = pd.to_datetime(data.index)
+    # Remove months with more than 15% of missing data
+    monthly_data_mean = data.groupby(data.index.month).mean()
+    monthly_data_q10 = data.groupby(data.index.month).quantile(0.9)
+    monthly_data_q90 = data.groupby(data.index.month).quantile(0.1)
+      
+    plt.bar(monthly_data_q10.index, monthly_data_q10[column], align='center',color='midnightblue')
+    plt.bar(monthly_data_mean.index, monthly_data_mean[column], align='center',color='mediumblue')
+    plt.bar(monthly_data_q90.index, monthly_data_q90[column], align='center',color='cornflowerblue')
+    #ax.hlines(y=mean, xmin=x_min, xmax=x_max, linewidth=2, color='r', linestyle='dashed')
+    plt.legend(('$Q_{10}$','$Q_{mean}$', '$Q_{90}$'), loc='upper right')
+    #plt.title(column, fontsize=14)
+    plt.xlabel('Month of the year', fontsize=6)
+    plt.xticks(np.arange(1, 12.1, step=1))
+    #plt.yticks(np.arange(0, 18.1, step=1))
+    plt.ylabel('Flow (m³/s)', fontsize=6)
+    plt.show()
