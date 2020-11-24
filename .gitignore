@@ -2,4 +2,5 @@
 .idea/
 raster/
 SIG/
+SIG_MAPS/
 data/all_observed_consisted_flows.pkl

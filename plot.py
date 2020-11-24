@@ -7,9 +7,6 @@ Created by the authors.
 import pandas as pd
 import numpy as np
 from matplotlib import pyplot as plt
-from plotly.offline import plot
-import plotly.figure_factory as ff
-import plotly.graph_objects as go
 import seaborn as sns
 from scipy.cluster.hierarchy import dendrogram
 import clustering
@@ -108,7 +105,9 @@ def correlation_matrix(data):
 #    plt.xticks(list(range(2,21)))
 #    plt.show()    
 
-def pca_components(scaled_parameters,n_components=4, method='Kmeans', k=3):  
+def pca_components(scaled_parameters, n_components=4, k=3):
+    plt.rcParams["figure.figsize"] = (20,20)
+    plt.rcParams['font.size'] = 6
     pca = PCA()
     principalComponents = pca.fit_transform(scaled_parameters)
     
@@ -116,34 +115,147 @@ def pca_components(scaled_parameters,n_components=4, method='Kmeans', k=3):
     most_important_names = [scaled_parameters.columns.to_list()[most_important[i]] for i in range(scaled_parameters.shape[1])]
     df = pd.DataFrame({'PC {}'.format(i+1): most_important_names[i] for i in range(scaled_parameters.shape[1])}.items(),columns=['PC','Feature'])
     
-    score=principalComponents[:,0:2]
-    coeff=np.transpose(pca.components_[0:2, :])
+    score=principalComponents[:,0:4]
+    coeff=np.transpose(pca.components_[0:4, :])
     labels=scaled_parameters.columns.to_list()
     
-    xs = score[:,0]
-    ys = score[:,1]
+    pca_c = PCA(n_components=n_components)
+    principal_c= pca_c.fit_transform(scaled_parameters)
+    kmeans = KMeans(n_clusters=k).fit(principal_c)
+    ward = AgglomerativeClustering(n_clusters=k).fit(principal_c)
+    label_w = ward.labels_
+    label_w = pd.DataFrame({'Label_Ward':label_w})
+    def replace(x):
+        if x==2:
+            return 0
+        elif x==0:
+            return 1
+        elif x==1:
+            return 2
+    label_w['Label_Ward_New'] = label_w['Label_Ward'].apply(replace)
+    yw = label_w['Label_Ward_New'].array   
+    yk = kmeans.labels_
+    
+
+    xs1 = score[:,0]
+    ys1 = score[:,1]
+    scalex1 = 1.0/(xs1.max() - xs1.min())
+    scaley1 = 1.0/(ys1.max() - ys1.min())
+    
+    xs2 = score[:,2]
+    ys2 = score[:,3]
+    scalex2 = 1.0/(xs2.max() - xs2.min())
+    scaley2 = 1.0/(ys2.max() - ys2.min())
+    
+    fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(2, 2)
+    ax1.scatter(xs1 * scalex1,ys1 * scaley1, c=yk, zorder=5, edgecolor='white')
+    n = coeff.shape[0]
+    for i in range(n):
+        ax1.arrow(0, 0, coeff[i,0], coeff[i,1],color = 'r', zorder=15)
+        ax1.text(coeff[i,0]* 1.15, coeff[i,1] * 1.15, labels[i], color = 'g', ha = 'center', va = 'center',
+                 path_effects=[pe.withStroke(linewidth=1, foreground="white")],zorder=20)    
+    ax1.grid()
+    ax1.set_title('PC with points clustered by Kmeans')
+    ax1.set_xlim(-1,1)
+    ax1.set_ylim(-1,1) 
+    ax1.set_xlabel('PC 1')
+    ax1.set_ylabel('PC 2')
+    
+    ax2.scatter(xs1 * scalex1,ys1 * scaley1, c=yw, zorder=5, edgecolor='white')
+    n = coeff.shape[0]
+    for i in range(n):
+        ax2.arrow(0, 0, coeff[i,0], coeff[i,1],color = 'r', zorder=15)
+        ax2.text(coeff[i,0]* 1.15, coeff[i,1] * 1.15, labels[i], color = 'g', ha = 'center', va = 'center',
+                 path_effects=[pe.withStroke(linewidth=1, foreground="white")],zorder=20)     
+    ax2.grid()
+    ax2.set_title('PC with points clustered by Ward')
+    ax2.set_xlim(-1,1)
+    ax2.set_ylim(-1,1) 
+    ax2.set_xlabel('PC 1')
+    ax2.set_ylabel('PC 2')
+    
+    
+    ax3.scatter(xs2 * scalex2,ys2 * scaley2, c=yk, zorder=5, edgecolor='white')
+    n = coeff.shape[0]
+    for i in range(n):
+        ax3.arrow(0, 0, coeff[i,2], coeff[i,3],color = 'r', zorder=15)
+        ax3.text(coeff[i,2]* 1.15, coeff[i,3] * 1.15, labels[i], color = 'g', ha = 'center', va = 'center',
+                 path_effects=[pe.withStroke(linewidth=1, foreground="white")],zorder=20)    
+
+    ax3.grid()
+#    ax3.set_title('PC with points clustered by Kmeans')
+    ax3.set_xlim(-1,1)
+    ax3.set_ylim(-1,1) 
+    ax3.set_xlabel('PC 3')
+    ax3.set_ylabel('PC 4')
+    
+    ax4.scatter(xs2 * scalex2,ys2 * scaley2, c=yk, zorder=5, edgecolor='white')
+    n = coeff.shape[0]
+    for i in range(n):
+        ax4.arrow(0, 0, coeff[i,2], coeff[i,3],color = 'r', zorder=15)
+        ax4.text(coeff[i,2]* 1.15, coeff[i,3] * 1.15, labels[i], color = 'g', ha = 'center', va = 'center',
+                 path_effects=[pe.withStroke(linewidth=1, foreground="white")],zorder=20)
+    ax4.grid()
+#    ax4.set_title('PC with points clustered by Ward')
+    ax4.set_xlim(-1,1)
+    ax4.set_ylim(-1,1) 
+    ax4.set_xlabel('PC 3')
+    ax4.set_ylabel('PC 4')
+   
+    return df
+
+
+def pca_components_2(scaled_parameters, n_components=4, method='Kmeans', k=3):
+    plt.rcParams["figure.figsize"] = (12,12)
+    plt.rcParams['font.size'] = 8
+    pca = PCA()
+    principalComponents = pca.fit_transform(scaled_parameters)
+    
+    most_important = [np.abs(pca.components_[i]).argmax() for i in range(scaled_parameters.shape[1])]
+    most_important_names = [scaled_parameters.columns.to_list()[most_important[i]] for i in range(scaled_parameters.shape[1])]
+    df = pd.DataFrame({'PC {}'.format(i+1): most_important_names[i] for i in range(scaled_parameters.shape[1])}.items(),columns=['PC','Feature'])
+    
+    score=principalComponents[:,0:4]
+    coeff=np.transpose(pca.components_[0:4, :])
+    labels=scaled_parameters.columns.to_list()
+    
+    xs = score[:,2]
+    ys = score[:,3]
     scalex = 1.0/(xs.max() - xs.min())
     scaley = 1.0/(ys.max() - ys.min())
     
+    pca_c = PCA(n_components=4)
+    principal_c= pca_c.fit_transform(scaled_parameters)
+    
     if method=='Kmeans':
-        kmeans = KMeans(n_clusters=k).fit(scaled_parameters)
+        kmeans = KMeans(n_clusters=k).fit(principal_c)
         y = kmeans.labels_
-        plt.title('PCA with points colored by Kmeans')
+        plt.title('Principal Components with points clustered by Kmeans')
     elif method=='Ward':
-        ward = AgglomerativeClustering(n_clusters=k).fit(scaled_parameters)
-        y = ward.labels_
-        plt.title('PCA with points colored by Ward')
+        ward = AgglomerativeClustering(n_clusters=k).fit(principal_c)
+        label_w = ward.labels_
+        label_w = pd.DataFrame({'Label_Ward':label_w})
+        def replace(x):
+            if x==2:
+                return 0
+            elif x==0:
+                return 1
+            elif x==1:
+                return 2
+        label_w['Label_Ward_New'] = label_w['Label_Ward'].apply(replace)
+        y = label_w['Label_Ward_New'].array
+        plt.title('Principal Components with points clustered by Ward')
     
     plt.scatter(xs * scalex,ys * scaley, c=y, zorder=5, edgecolor='white')
     n = coeff.shape[0]
     for i in range(n):
-        plt.arrow(0, 0, coeff[i,0], coeff[i,1],color = 'r', zorder=15)
-        plt.text(coeff[i,0]* 1.15, coeff[i,1] * 1.15, labels[i], color = 'g', ha = 'center', va = 'center',
+        plt.arrow(0, 0, coeff[i,2], coeff[i,3],color = 'r', zorder=15)
+        plt.text(coeff[i,2]* 1.15, coeff[i,3] * 1.15, labels[i], color = 'g', ha = 'center', va = 'center',
                  path_effects=[pe.withStroke(linewidth=1, foreground="white")],zorder=20)
     plt.xlim(-1,1)
     plt.ylim(-1,1)
-    plt.xlabel("PC {}".format(1))
-    plt.ylabel("PC {}".format(2))
+    plt.xlabel("PC {}".format(3))
+    plt.ylabel("PC {}".format(4))
     plt.grid()
     plt.show()
     return df
