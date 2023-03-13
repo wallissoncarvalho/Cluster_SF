@@ -342,3 +342,23 @@ def monthly_barplot(data, column, figsize=(6.4,4.8)):
     #plt.yticks(np.arange(0, 18.1, step=1))
     plt.ylabel('Flow (m³/s)', fontsize=6)
     plt.show()
+    
+def boxplot(data):
+    list_of_dataframes = []
+    for i in range(int(data.iloc[:,-1:].max())+1):
+        list_of_dataframes.append(data.loc[data[data.columns[-1]] == i].iloc[:, :-1])
+    plt.rcParams.update({'font.size': 9})
+    fig, axs = plt.subplots(int(len(data.columns)/3)+1, 3, figsize=(8,9))
+    for idx, metric in enumerate(data.columns[:-1]):
+        aux = []
+        linha = int(idx/3)
+        coluna = idx%3
+        for i in range (int(data.iloc[:,-1:].max())+1):
+            aux.append(list_of_dataframes[i][metric])
+            axs[linha, coluna].boxplot(aux)
+            axs[linha, coluna].set_title(metric, fontsize=9)
+            axs[linha, coluna].set_xticks([1, 2, 3], ['Cluster 1', 'Cluster 2', 'Cluster 3'], fontsize=8)
+    fig.tight_layout()
+    fig.savefig('graphics/Boxplots.png', dpi=300)
+    # axs[len(data.columns)-2].set_xticklabels(['Cluster 1', 'Cluster 2', 'Cluster 3'])
+    return list_of_dataframes
